@@ -11,4 +11,4 @@ number_of_0 = 0
 for steps in steps_list:
     dial = (dial + steps) % dial_size
     number_of_0 += int(dial == 0)
-print(number_of_0)
+print("Number of times landing at 0: ", number_of_0)
