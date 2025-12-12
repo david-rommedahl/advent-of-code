@@ -1,3 +1,4 @@
+from collections import Counter
 from pathlib import Path
 from time import perf_counter
 
@@ -87,25 +88,27 @@ splitter_indices = list(filter(None, [set(i for i in range(len(line)) if line[i]
 
 
 def test_counter(start_index: int, splitter_indices: list[set[int]]):
-    ray_indices = [start_index]
+    ray_counter = Counter([start_index])
     timelines = 1
+    for_calls = 0
     for level in splitter_indices:
-        new_ray_indices = []
-        timelines += sum(index in level for index in ray_indices)
-        for index in ray_indices:
+        new_ray_counter = Counter()
+        timelines += sum(count for index, count in ray_counter.items() if index in level)
+        for index, count in ray_counter.items():
+            for_calls += 1
             if index in level:
-                new_ray_indices.extend([index - 1, index + 1])
+                new_ray_counter.update([index - 1, index + 1] * count)
             else:
-                new_ray_indices.append(index)
-        ray_indices = new_ray_indices
-    return timelines
+                new_ray_counter.update([index] * count)
+        ray_counter = new_ray_counter
+    return timelines, for_calls
 
 
-print(max(len(x) for x in splitter_indices))
-number_of_timelines = test_counter(start_index, splitter_indices)
+number_of_timelines, number_of_loops = test_counter(start_index, splitter_indices)
 t2 = perf_counter()
 # recursive_depth_first_traversal(start_index, splitter_indices)
 # print("Total number of paths: ", number_of_paths)
 # print("Number of function calls: ", function_calls)
 print(f"Total time: {t2 - t1:.4f}")
 print("Number of timelines: ", number_of_timelines)
+print("Number of loops: ", number_of_loops)
