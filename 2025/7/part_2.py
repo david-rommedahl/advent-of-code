@@ -46,7 +46,7 @@ real_input_path = Path(__file__).parent / "input.txt"
 # Back to the drawing board.
 
 t1 = perf_counter()
-with open(test_input_path, "r") as f:
+with open(real_input_path, "r") as f:
     diagram = [line.strip() for line in f]
 
 start_index = diagram[0].find("S")
@@ -97,9 +97,9 @@ def test_counter(start_index: int, splitter_indices: list[set[int]]):
         for index, count in ray_counter.items():
             for_calls += 1
             if index in level:
-                new_ray_counter.update([index - 1, index + 1] * count)
+                new_ray_counter.update({index - 1: count, index + 1: count})
             else:
-                new_ray_counter.update([index] * count)
+                new_ray_counter.update({index: count})
         ray_counter = new_ray_counter
     return timelines, for_calls
 
