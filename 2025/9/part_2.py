@@ -9,7 +9,7 @@ file_path = Path(__file__).parent / "test_input.txt"
 t1 = perf_counter()
 
 with open(file_path, "r") as f:
-    tile_coordinates = list(
+    tile_coordinates = set(
         sorted((tuple(int(coord) for coord in line.strip().split(",")) for line in f), key=lambda x: (x[1], x[0]))
     )
 
@@ -41,8 +41,8 @@ def ray_cast(point: tuple[int, int]) -> bool:
         num_intersections = 0
         for endpoints in rows_or_cols:
             line_segments = [segment for i in range(0, len(endpoints), 2) if (segment := endpoints[i : i + 2])]
-            for start, end in line_segments:
-                if start < coord < end:
+            for segment in line_segments:
+                if min(segment) < coord < max(segment):
                     num_intersections += 1
         return num_intersections % 2 == 1
 
@@ -74,14 +74,15 @@ for x, y in tile_coordinates:
     columns[x].append(y)
 
 point_combinations = combinations(tile_coordinates, 2)
-valid_combinations = []
+largest_area, best_comb = 0, tuple()
 for comb in point_combinations:
     a, b = comb
-    c_d = (a[0], b[1]), (b[0], a[1])
-    if all(check_point(p) for p in c_d):
-        valid_combinations.append(comb)
-area_comb = [(x, area(*x)) for x in valid_combinations]
-max_area = max(area_comb, key=lambda x: x[1])
+    if (comb_area := area(a, b)) > largest_area:
+        c_d = (a[0], b[1]), (b[0], a[1])
+        if all(check_point(p) for p in c_d if p not in tile_coordinates):
+            largest_area = comb_area
+            best_comb = comb
 t2 = perf_counter()
-print("Max area: ", max_area)
+print("Max area: ", largest_area)
+print("Best comb: ", best_comb)
 print(f"Total time: {t2 - t1:.4f}")
