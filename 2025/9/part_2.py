@@ -36,15 +36,15 @@ def is_on_border(point: tuple[int, int]) -> bool:
 
 def ray_cast(point: tuple[int, int]) -> bool:
     """Counts how many borders a ray starting at a point and going straight up would cross."""
-    x, y = point
-    rows_above = [rows[row] for row in rows if row < y]
-    num_intersections = 0
-    for row in rows_above:
-        line_segments = [segment for i in range(0, len(row), 2) if (segment := row[i : i + 2])]
-        for start, end in line_segments:
-            if start < x < end:
-                num_intersections += 1
-    return num_intersections % 2 == 1
+
+    def line_cross_helper(rows_or_cols, coord):
+        num_intersections = 0
+        for endpoints in rows_or_cols:
+            line_segments = [segment for i in range(0, len(endpoints), 2) if (segment := endpoints[i : i + 2])]
+            for start, end in line_segments:
+                if start <= coord <= end:
+                    num_intersections += 1
+        return num_intersections % 2 == 1
 
 
 def check_point(point: tuple[int, int]) -> bool:
