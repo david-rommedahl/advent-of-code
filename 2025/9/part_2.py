@@ -48,7 +48,9 @@ def ray_cast(point: tuple[int, int]) -> bool:
 
     x, y = point
     rows_above = [rows[row] for row in rows if row < y]
-    return line_cross_helper(rows_above, x)
+    return line_cross_helper(
+        rows_above, x + 0.5
+    )  # Adding small epsilon value to handle case when a ray passes passes exactly through one or more vertices
 
 
 def check_point(point: tuple[int, int]) -> bool:
