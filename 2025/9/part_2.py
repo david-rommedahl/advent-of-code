@@ -46,21 +46,6 @@ def ray_cast(point: tuple[int, int]) -> bool:
                     num_intersections += 1
         return num_intersections % 2 == 1
 
-    x, y = point
-    rows_above, rows_below = [rows[row] for row in rows if row < y], [rows[row] for row in rows if row > y]
-    cols_to_left, cols_to_right = (
-        [columns[col] for col in columns if col < x],
-        [columns[col] for col in columns if col > x],
-    )
-    return not any(
-        (
-            not line_cross_helper(rows_above, x),
-            not line_cross_helper(rows_below, x),
-            not line_cross_helper(cols_to_left, y),
-            not line_cross_helper(cols_to_right, y),
-        )
-    )
-
 
 def check_point(point: tuple[int, int]) -> bool:
     return is_on_border(point) or ray_cast(point)
@@ -85,7 +70,6 @@ for x, y in tile_coordinates:
     columns[x].append(y)
 
 point_combinations = combinations(tile_coordinates, 2)
-point_combinations = [((7, 1), (11, 7))]
 valid_combinations = []
 for comb in point_combinations:
     a, b = comb
