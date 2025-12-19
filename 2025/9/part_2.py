@@ -42,9 +42,13 @@ def ray_cast(point: tuple[int, int]) -> bool:
         for endpoints in rows_or_cols:
             line_segments = [segment for i in range(0, len(endpoints), 2) if (segment := endpoints[i : i + 2])]
             for start, end in line_segments:
-                if start <= coord <= end:
+                if start < coord < end:
                     num_intersections += 1
         return num_intersections % 2 == 1
+
+    x, y = point
+    rows_above = [rows[row] for row in rows if row < y]
+    return line_cross_helper(rows_above, x)
 
 
 def check_point(point: tuple[int, int]) -> bool:
