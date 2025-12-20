@@ -81,9 +81,11 @@ for comb in point_combinations:
     a, b = comb
     if (comb_area := area(a, b)) > largest_area:
         c_d = (a[0], b[1]), (b[0], a[1])
-        if all(check_point(p) for p in c_d if p not in tile_coordinates):
-            largest_area = comb_area
-            best_comb = comb
+        if c_d != (b, a):
+            if not all(check_point(p) for p in c_d if p not in tile_coordinates):
+                continue
+            # If the two new points are valid, the simplest and safest solution seems to be to check all
+            # points inside the rectangle
 t2 = perf_counter()
 print("Max area: ", largest_area)
 print("Best comb: ", best_comb)
