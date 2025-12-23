@@ -71,6 +71,18 @@ def area(a, b):
     return x_length * y_length
 
 
+def generate_lines(points: tuple[tuple[int, int]]) -> tuple[tuple[tuple[int, int]]]:
+    """Takes points and creates all possible vertical and horizontal lines for the points."""
+    lines = {"horizontal": [], "vertical": []}
+    endpoints = combinations(points, 2)
+    for endpoint_a, endpoint_b in endpoints:
+        if endpoint_a[0] == endpoint_b[0]:
+            lines["vertcal"].append((endpoint_a, endpoint_b))
+        elif endpoint_a[1] == endpoint_b[1]:
+            lines["horizontal"].append((endpoint_a, endpoint_b))
+    return lines
+
+
 for x, y in tile_coordinates:
     rows[y].append(x)
     columns[x].append(y)
@@ -84,8 +96,8 @@ for comb in point_combinations:
         if c_d != (b, a):
             if not all(check_point(p) for p in c_d if p not in tile_coordinates):
                 continue
-            # If the two new points are valid, the simplest and safest solution seems to be to check all
-            # points inside the rectangle
+            # If the two new points are valid, it seems like we can just check if any of the lines cross any of the already existing lines
+            rectangle_lines = generate_lines(a, b, *c_d)
 t2 = perf_counter()
 print("Max area: ", largest_area)
 print("Best comb: ", best_comb)
