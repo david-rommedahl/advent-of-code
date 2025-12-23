@@ -123,3 +123,5 @@ t2 = perf_counter()
 print("Max area: ", largest_area)
 print("Best comb: ", best_comb)
 print(f"Total time: {t2 - t1:.4f}")
+
+# This is the current value I've been getting, which is wrong: 4647960552
