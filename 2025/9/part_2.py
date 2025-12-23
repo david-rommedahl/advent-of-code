@@ -4,7 +4,7 @@ from itertools import combinations
 from pathlib import Path
 from time import perf_counter
 
-file_path = Path(__file__).parent / "test_input.txt"
+file_path = Path(__file__).parent / "input.txt"
 
 t1 = perf_counter()
 
@@ -71,16 +71,32 @@ def area(a, b):
     return x_length * y_length
 
 
-def generate_lines(points: tuple[tuple[int, int]]) -> tuple[tuple[tuple[int, int]]]:
+def generate_lines(*points: tuple[tuple[int, int]]) -> dict[str, list[tuple]]:
     """Takes points and creates all possible vertical and horizontal lines for the points."""
     lines = {"horizontal": [], "vertical": []}
     endpoints = combinations(points, 2)
     for endpoint_a, endpoint_b in endpoints:
         if endpoint_a[0] == endpoint_b[0]:
-            lines["vertcal"].append((endpoint_a, endpoint_b))
+            lines["vertical"].append(tuple(sorted([endpoint_a, endpoint_b], key=lambda x: x[1])))
         elif endpoint_a[1] == endpoint_b[1]:
-            lines["horizontal"].append((endpoint_a, endpoint_b))
+            lines["horizontal"].append(tuple(sorted([endpoint_a, endpoint_b], key=lambda x: x[0])))
     return lines
+
+
+def check_crossing_lines(horizontal: list[tuple[tuple[int]]], vertical: list[tuple[tuple[int]]]) -> bool:
+    """Checks if any of the lines given to the function cross any existing lines."""
+    for line in horizontal:
+        relevant_cols = [columns[col] for col in columns if (col >= line[0][0] and col <= line[1][0])]
+        for endpoints in relevant_cols:
+            line_segments = [segment for i in range(0, len(endpoints), 2) if (segment := endpoints[i : i + 2])]
+            if any(segment[0] < line[0][1] < segment[1] for segment in line_segments):
+                return True
+    for line in vertical:
+        relevant_rows = [rows[row] for row in rows if (row >= line[0][1] and row <= line[1][1])]
+        for endpoints in relevant_rows:
+            line_segments = [segment for i in range(0, len(endpoints), 2) if (segment := endpoints[i : i + 2])]
+            if any(segment[0] < line[0][0] < segment[1] for segment in line_segments):
+                return True
 
 
 for x, y in tile_coordinates:
@@ -88,6 +104,7 @@ for x, y in tile_coordinates:
     columns[x].append(y)
 
 point_combinations = combinations(tile_coordinates, 2)
+# point_combinations = [((2, 3), (11, 1))]
 largest_area, best_comb = 0, tuple()
 for comb in point_combinations:
     a, b = comb
@@ -98,6 +115,10 @@ for comb in point_combinations:
                 continue
             # If the two new points are valid, it seems like we can just check if any of the lines cross any of the already existing lines
             rectangle_lines = generate_lines(a, b, *c_d)
+            if check_crossing_lines(**rectangle_lines):
+                continue
+            largest_area = comb_area
+            best_comb = comb
 t2 = perf_counter()
 print("Max area: ", largest_area)
 print("Best comb: ", best_comb)
