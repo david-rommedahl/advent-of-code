@@ -129,5 +129,14 @@ fig, (ax1, ax2) = plt.subplots(1, 2)
 for line in line_segments:
     ax1.plot(*zip(*line), c="b")
 
-ax2.scatter(*zip(*outside_points), marker=".", c="r")
+ax2.scatter(*zip(*outside_points), marker=".", c="r", label="outside")
+best_rectangle = []
+xs, ys = zip(*best_comb)
+xs = [x_mapping[x] for x in xs]
+ys = [y_mapping[y] for y in ys]
+for x in range(min(xs), max(xs) + 1):
+    for y in range(min(ys), max(ys) + 1):
+        best_rectangle.append((x, y))
+ax2.scatter(*zip(*best_rectangle), marker=".", c="g", label="best rectangle")
+ax2.legend(loc="center left", bbox_to_anchor=(1, 0.5))
 plt.show()
