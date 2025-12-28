@@ -62,9 +62,13 @@ def area(a, b):
     return x_length * y_length
 
 
-def all_points_in_rectangle(a, b):
+def all_points_in_rectangle_in_polygon(a, b, outside_points: set[tuple[int, int]]) -> bool:
     xs, ys = zip(a, b)
-    return [(x, y) for x in range(min(xs), max(xs) + 1) for y in range(min(ys), max(ys) + 1)]
+    for x in range(min(xs), max(xs) + 1):
+        for y in range(min(ys), max(ys) + 1):
+            if (x, y) in outside_points:
+                return False
+    return True
 
 
 x_coords, y_coords = zip(*tile_coordinates)
@@ -111,7 +115,7 @@ best_comb = ()
 for a, b in coordinate_combinations:
     reverse_points = get_reverse_points(a, b, x_mapping=x_reverse, y_mapping=y_reverse)
     if (new_area := area(*reverse_points)) > max_area:
-        if any(point in outside_points for point in all_points_in_rectangle(a, b)):
+        if not all_points_in_rectangle_in_polygon(a, b, outside_points):
             continue
         max_area = new_area
         best_comb = reverse_points
@@ -119,11 +123,11 @@ t2 = perf_counter()
 print(f"Total time: {t2 - t1:.4f}")
 print("Best Area: ", max_area)
 print("Best comb: ", best_comb)
+
+# Illustration of the shape
 fig, (ax1, ax2) = plt.subplots(1, 2)
 for line in line_segments:
     ax1.plot(*zip(*line), c="b")
 
 ax2.scatter(*zip(*outside_points), marker=".", c="r")
 plt.show()
-
-# This is the current value I've been getting, which is wrong: 4647960552
