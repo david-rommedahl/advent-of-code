@@ -1,3 +1,5 @@
+from functools import reduce
+from itertools import combinations
 from pathlib import Path
 from time import perf_counter
 
@@ -42,6 +44,20 @@ def raycast(point: tuple[int, int], horizontal_lines: dict[int, list[tuple[tuple
     return sum(line[0][0] < x + 0.5 < line[1][0] for line in lines_above) % 2 == 1
 
 
+def length(*coords):
+    if len(coords) != 2:
+        raise ValueError("Need two values")
+    return abs(reduce(lambda a, b: a - b, coords)) + 1
+
+
+def area(a, b):
+    x_coords, y_coords = zip(a, b)
+    x_length = length(*x_coords)
+    y_length = length(*y_coords)
+
+    return x_length * y_length
+
+
 x_coords, y_coords = zip(*tile_coordinates)
 x_mapping = {x: i for i, x in enumerate(sorted(set(x_coords)), start=1)}
 
@@ -76,6 +92,9 @@ outside_points = {
     for j in range(0, max(horizontal_lines) + 2)
     if not (on_border((i, j), horizontal_lines, vertical_lines) or raycast((i, j), horizontal_lines))
 }
+
+# Now we are going to get all point combinations
+coordinate_combinations = combinations(compressed_coordinates, 2)
 
 t2 = perf_counter()
 print(f"Total time: {t2 - t1:.4f}")
