@@ -50,6 +50,10 @@ def length(*coords):
     return abs(reduce(lambda a, b: a - b, coords)) + 1
 
 
+def get_reverse_points(*points, x_mapping, y_mapping):
+    return tuple((x_mapping[x], y_mapping[y]) for x, y in points)
+
+
 def area(a, b):
     x_coords, y_coords = zip(a, b)
     x_length = length(*x_coords)
@@ -58,10 +62,17 @@ def area(a, b):
     return x_length * y_length
 
 
+def all_points_in_rectangle(a, b):
+    xs, ys = zip(a, b)
+    return [(x, y) for x in range(min(xs), max(xs) + 1) for y in range(min(ys), max(ys) + 1)]
+
+
 x_coords, y_coords = zip(*tile_coordinates)
 x_mapping = {x: i for i, x in enumerate(sorted(set(x_coords)), start=1)}
+x_reverse = {v: k for k, v in x_mapping.items()}
 
 y_mapping = {y: i for i, y in enumerate(sorted(set(y_coords)), start=1)}
+y_reverse = {v: k for k, v in y_mapping.items()}
 
 compressed_coordinates = [(x_mapping[x], y_mapping[y]) for x, y in tile_coordinates]
 line_segments = [
@@ -98,11 +109,16 @@ coordinate_combinations = combinations(compressed_coordinates, 2)
 max_area = 0
 best_comb = ()
 for a, b in coordinate_combinations:
-    if new_area := area(a, b) > max_area:
+    reverse_points = get_reverse_points(a, b, x_mapping=x_reverse, y_mapping=y_reverse)
+    if (new_area := area(*reverse_points)) > max_area:
+        if any(point in outside_points for point in all_points_in_rectangle(a, b)):
+            continue
         max_area = new_area
+        best_comb = reverse_points
 t2 = perf_counter()
 print(f"Total time: {t2 - t1:.4f}")
-
+print("Best Area: ", max_area)
+print("Best comb: ", best_comb)
 fig, (ax1, ax2) = plt.subplots(1, 2)
 for line in line_segments:
     ax1.plot(*zip(*line), c="b")
