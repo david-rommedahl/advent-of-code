@@ -95,7 +95,11 @@ outside_points = {
 
 # Now we are going to get all point combinations
 coordinate_combinations = combinations(compressed_coordinates, 2)
-
+max_area = 0
+best_comb = ()
+for a, b in coordinate_combinations:
+    if new_area := area(a, b) > max_area:
+        max_area = new_area
 t2 = perf_counter()
 print(f"Total time: {t2 - t1:.4f}")
 
