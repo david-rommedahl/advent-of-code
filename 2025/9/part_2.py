@@ -63,11 +63,37 @@ def area(a, b):
 
 
 def all_points_in_rectangle_in_polygon(a, b, outside_points: set[tuple[int, int]]) -> bool:
+    """Checks all points inside of a rectangle against a set of points which are outside of the polygon."""
     xs, ys = zip(a, b)
     for x in range(min(xs), max(xs) + 1):
         for y in range(min(ys), max(ys) + 1):
             if (x, y) in outside_points:
                 return False
+    return True
+
+
+def rectangle_sides_intersect_polygon(
+    a: tuple[int, int], b: tuple[int, int], outside_points: set[tuple[int, int]]
+) -> bool:
+    """Creates a rectangle out of two points and checks if any of its sides intersect the polygon.
+
+    First creates the all corners of the retangle, then loops over every point on every side of the rectangle
+    and checks if the point is outside of the polygon. Returns `False` at the first outside point it finds.
+    This cuts the execution time almost in half compared to `all_points_in_rectangle_in_polygon`.
+    """
+    c, d = (a[0], b[1]), (b[0], a[1])
+    endpoints = combinations((a, b, c, d), 2)
+    for a, b in endpoints:
+        if a[0] == b[0]:
+            changing = range(min(a[1], b[1]), max(a[1], b[1]) + 1)
+            for y in changing:
+                if (a[0], y) in outside_points:
+                    return False
+        elif a[1] == b[1]:
+            changing = range(min(a[0], b[0]), max(a[0], b[0]) + 1)
+            for x in changing:
+                if (x, a[1]) in outside_points:
+                    return False
     return True
 
 
@@ -115,7 +141,7 @@ best_comb = ()
 for a, b in coordinate_combinations:
     reverse_points = get_reverse_points(a, b, x_mapping=x_reverse, y_mapping=y_reverse)
     if (new_area := area(*reverse_points)) > max_area:
-        if not all_points_in_rectangle_in_polygon(a, b, outside_points):
+        if not rectangle_sides_intersect_polygon(a, b, outside_points):
             continue
         max_area = new_area
         best_comb = reverse_points
