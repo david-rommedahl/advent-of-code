@@ -5,7 +5,7 @@ from time import perf_counter
 
 from matplotlib import pyplot as plt
 
-file_path = Path(__file__).parent / "test_input.txt"
+file_path = Path(__file__).parent / "input.txt"
 
 t1 = perf_counter()
 
