@@ -1,127 +1,90 @@
-from collections import defaultdict
-from functools import reduce
-from itertools import combinations
 from pathlib import Path
 from time import perf_counter
 
-file_path = Path(__file__).parent / "input.txt"
+from matplotlib import pyplot as plt
+
+file_path = Path(__file__).parent / "test_input.txt"
 
 t1 = perf_counter()
 
 with open(file_path, "r") as f:
-    tile_coordinates = set(
-        sorted((tuple(int(coord) for coord in line.strip().split(",")) for line in f), key=lambda x: (x[1], x[0]))
-    )
-
-rows = defaultdict(list)
-columns = defaultdict(list)
+    tile_coordinates = list(tuple(int(coord) for coord in line.strip().split(",")) for line in f)
 
 
-def is_on_border(point: tuple[int, int]) -> bool:
+def on_border(
+    point: tuple[int, int],
+    horizontal_lines: dict[int, list[tuple[tuple[int, int], tuple[int, int]]]],
+    vertical_lines: dict[int, list[tuple[tuple[int, int], tuple[int, int]]]],
+):
     x, y = point
-    if column := columns.get(x):
-        if min(column) <= y <= max(column):
-            if len(column) == 4:
-                if column[1] < y < column[3]:
-                    return False
+    if horizontal := horizontal_lines.get(y):
+        if any(line[0][0] <= x <= line[1][0] for line in horizontal):
             return True
-    if row := rows.get(y):
-        if min(row) <= x <= max(row):
-            if len(row) == 4:
-                if row[1] < x < row[3]:
-                    return False
+    if vertical := vertical_lines.get(x):
+        if any(line[0][1] <= y <= line[1][1] for line in vertical):
             return True
     return False
 
 
-def ray_cast(point: tuple[int, int]) -> bool:
-    """Counts how many borders a ray starting at a point and going straight up would cross."""
+def raycast(point: tuple[int, int], horizontal_lines: dict[int, list[tuple[tuple[int, int], tuple[int, int]]]]) -> bool:
+    """Function which checks if a point is within a polygon by using raycasting.
 
-    def line_cross_helper(rows_or_cols, coord):
-        num_intersections = 0
-        for endpoints in rows_or_cols:
-            line_segments = [segment for i in range(0, len(endpoints), 2) if (segment := endpoints[i : i + 2])]
-            for segment in line_segments:
-                if min(segment) < coord < max(segment):
-                    num_intersections += 1
-        return num_intersections % 2 == 1
+    This implementation checks if a point is inside the polygon by casting a ray directly upward.
 
+    Returns:
+        True if the point is inside the polygon.
+    """
     x, y = point
-    rows_above = [rows[row] for row in rows if row < y]
-    return line_cross_helper(
-        rows_above, x + 0.5
-    )  # Adding small epsilon value to handle case when a ray passes passes exactly through one or more vertices
+    lines_above = []
+    for k, v in horizontal_lines.items():
+        if k > y:
+            lines_above.extend(v)
+    return sum(line[0][0] < x + 0.5 < line[1][0] for line in lines_above) % 2 == 1
 
 
-def check_point(point: tuple[int, int]) -> bool:
-    return is_on_border(point) or ray_cast(point)
+x_coords, y_coords = zip(*tile_coordinates)
+x_mapping = {x: i for i, x in enumerate(sorted(set(x_coords)), start=1)}
 
+y_mapping = {y: i for i, y in enumerate(sorted(set(y_coords)), start=1)}
 
-def length(*coords):
-    if len(coords) != 2:
-        raise ValueError("Need two values")
-    return abs(reduce(lambda a, b: a - b, coords)) + 1
+compressed_coordinates = [(x_mapping[x], y_mapping[y]) for x, y in tile_coordinates]
+line_segments = [
+    line for i in range(len(compressed_coordinates)) if len(line := tuple(compressed_coordinates[i : i + 2])) == 2
+]
+line_segments.append((compressed_coordinates[-1], compressed_coordinates[0]))
 
+horizontal_lines = dict()
+vertical_lines = dict()
+for line in line_segments:
+    if line[0][0] == line[1][0]:
+        sorted_line = tuple(sorted(line, key=lambda x: x[1]))
+        if vertical_lines.get(line[0][0]):
+            vertical_lines[line[0][0]].append(sorted_line)
+        else:
+            vertical_lines[line[0][0]] = [sorted_line]
+    else:
+        sorted_line = tuple(sorted(line, key=lambda x: x[0]))
+        if horizontal_lines.get(line[0][1]):
+            horizontal_lines[line[0][1]].append(sorted_line)
+        else:
+            horizontal_lines[line[0][1]] = [sorted_line]
 
-def area(a, b):
-    x_coords, y_coords = zip(a, b)
-    x_length = length(*x_coords)
-    y_length = length(*y_coords)
+# Flood fill the shape, to get all points which are outside of our polygon
+outside_points = {
+    (i, j)
+    for i in range(0, max(vertical_lines) + 2)
+    for j in range(0, max(horizontal_lines) + 2)
+    if not (on_border((i, j), horizontal_lines, vertical_lines) or raycast((i, j), horizontal_lines))
+}
 
-    return x_length * y_length
-
-
-def generate_lines(*points: tuple[tuple[int, int]]) -> dict[str, list[tuple]]:
-    """Takes points and creates all possible vertical and horizontal lines for the points."""
-    lines = {"horizontal": [], "vertical": []}
-    endpoints = combinations(points, 2)
-    for endpoint_a, endpoint_b in endpoints:
-        if endpoint_a[0] == endpoint_b[0]:
-            lines["vertical"].append(tuple(sorted([endpoint_a, endpoint_b], key=lambda x: x[1])))
-        elif endpoint_a[1] == endpoint_b[1]:
-            lines["horizontal"].append(tuple(sorted([endpoint_a, endpoint_b], key=lambda x: x[0])))
-    return lines
-
-
-def check_crossing_lines(horizontal: list[tuple[tuple[int]]], vertical: list[tuple[tuple[int]]]) -> bool:
-    """Checks if any of the lines given to the function cross any existing lines."""
-    for line in horizontal:
-        relevant_cols = [columns[col] for col in columns if (col >= line[0][0] and col <= line[1][0])]
-        for endpoints in relevant_cols:
-            line_segments = [segment for i in range(0, len(endpoints), 2) if (segment := endpoints[i : i + 2])]
-            if any(segment[0] < line[0][1] < segment[1] for segment in line_segments):
-                return True
-    for line in vertical:
-        relevant_rows = [rows[row] for row in rows if (row >= line[0][1] and row <= line[1][1])]
-        for endpoints in relevant_rows:
-            line_segments = [segment for i in range(0, len(endpoints), 2) if (segment := endpoints[i : i + 2])]
-            if any(segment[0] < line[0][0] < segment[1] for segment in line_segments):
-                return True
-
-
-for x, y in tile_coordinates:
-    rows[y].append(x)
-    columns[x].append(y)
-
-point_combinations = combinations(tile_coordinates, 2)
-# point_combinations = [((2, 3), (11, 1))]
-largest_area, best_comb = 0, tuple()
-for comb in point_combinations:
-    a, b = comb
-    if (comb_area := area(a, b)) > largest_area:
-        c_d = (a[0], b[1]), (b[0], a[1])
-        if c_d != (b, a):
-            if not all(check_point(p) for p in c_d if p not in tile_coordinates):
-                continue
-            # If the two new points are valid, it seems like we can just check if any of the lines cross any of the already existing lines
-            rectangle_lines = generate_lines(a, b, *c_d)
-            if check_crossing_lines(**rectangle_lines):
-                continue
-            largest_area = comb_area
-            best_comb = comb
 t2 = perf_counter()
-print("Max area: ", largest_area)
-print("Best comb: ", best_comb)
 print(f"Total time: {t2 - t1:.4f}")
+
+fig, (ax1, ax2) = plt.subplots(1, 2)
+for line in line_segments:
+    ax1.plot(*zip(*line), c="b")
+
+ax2.scatter(*zip(*outside_points), marker=".", c="r")
+plt.show()
 
 # This is the current value I've been getting, which is wrong: 4647960552
