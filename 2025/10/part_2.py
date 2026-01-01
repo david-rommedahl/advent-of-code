@@ -100,9 +100,17 @@ def reduce_to_row_echelon(matrix: Matrix, b: Sequence[int]) -> tuple[Matrix, lis
     return matrix, b
 
 
+def solve_system(matrix: Matrix, solution: Sequence[int]) -> Sequence[int]:
+    for i in range(len(matrix.rows) - 1, 0, -1):
+        row = matrix.rows[i]
+        sol = solution[i]
+        pivot = row.index(1)
+        print(sol, pivot)
+
+
 t1 = perf_counter()
 # Test on first matrix
-for line in lines:
+for line in lines[:1]:
     buttons = [[int(x) for x in button.strip("()").split(",")] for button in line[1:-1]]
     b = [int(x) for x in line[-1].strip("{}").split(",")]
     columns = [[1 if x in button else 0 for x in range(len(b))] for button in buttons]
@@ -113,5 +121,6 @@ for line in lines:
     print(f"Augmented matrix:\n[{'\n '.join(str(x) for x in list(zip(matrix, b)))}]")
     free_variables = [i for i in range(len(matrix.columns)) if i not in matrix.leading_zeros]
     print("Free variables: ", free_variables)
+    solution = solve_system(matrix, b)
 t2 = perf_counter()
 print(f"Total time: {t2 - t1:.4f}")
