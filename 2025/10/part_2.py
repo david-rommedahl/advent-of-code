@@ -59,9 +59,11 @@ class Matrix:
     def sort_on_leading_zeros(self, vector: Sequence[int] | None = None) -> Matrix | tuple[Matrix, list[int]]:
         """Sorts rows of the matrix and a provided vector based on the leading zeros in the matrix' rows."""
         if isinstance(vector, Sequence):
-            matrix, b = zip(*[x for _, x in sorted(zip(self.leading_zeros, (zip(self, vector))))])
-            return Matrix(matrix), list(b)
-        return Matrix([row for _, row in sorted(zip(self.leading_zeros, self.rows))])
+            rows, b = zip(*[x for _, x in sorted(zip(self.leading_zeros, (zip(self, vector))))])
+            self.rows = rows
+            return self, list(b)
+        self.rows = [row for _, row in sorted(zip(self.leading_zeros, self.rows))]
+        return self
 
     def __iter__(self) -> Iterator[Sequence[int]]:
         for row in self.rows:
