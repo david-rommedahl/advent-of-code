@@ -1,3 +1,5 @@
+from copy import deepcopy
+from itertools import product
 from pathlib import Path
 from time import perf_counter
 from typing import Iterable, Iterator, Sequence
@@ -60,7 +62,7 @@ class Matrix:
         """Sorts rows of the matrix and a provided vector based on the leading zeros in the matrix' rows."""
         if isinstance(vector, Sequence):
             rows, b = zip(*[x for _, x in sorted(zip(self.leading_zeros, (zip(self, vector))))])
-            self.rows = rows
+            self.rows = [list(row) for row in rows]
             return self, list(b)
         self.rows = [row for _, row in sorted(zip(self.leading_zeros, self.rows))]
         return self
@@ -99,30 +101,78 @@ def reduce_to_row_echelon(matrix: Matrix, b: Sequence[int]) -> tuple[Matrix, lis
             matrix.rows[index] = add(matrix.rows[index], [-x * multiplier for x in matrix.rows[first_index]])
             b[index] = b[index] - b[first_index] * multiplier
         matrix, b = matrix.sort_on_leading_zeros(b)
+    # Ensure that all pivot elements are positive
+    for i in range(len(matrix.rows)):
+        try:
+            pivot = next(i for i in matrix.rows[i] if i != 0)
+            if pivot and pivot < 0:
+                matrix.rows[i] = [-x for x in matrix.rows[i]]
+                b[i] = -b[i]
+        except StopIteration:
+            continue
+
     return matrix, b
 
 
 def solve_system(matrix: Matrix, solution: Sequence[int]) -> Sequence[int]:
-    for i in range(len(matrix.rows) - 1, 0, -1):
-        row = matrix.rows[i]
-        sol = solution[i]
-        pivot = row.index(1)
-        print(sol, pivot)
+    """Performs one step in the back substitution algorithm, getting different combinations for the free variables.
+
+    Assumes that a matrix has already been transformed to RRE form.
+    """
+    free_variables = [i for i in range(len(matrix.columns)) if i not in matrix.leading_zeros]
+    free_variable_combinations = product(range(50), repeat=len(free_variables))
+    best_solution = None
+    best_sum = None
+    for combination in free_variable_combinations:
+        valid_solution = True
+        variables = [0 for _ in range(len(matrix.columns))]
+        for index, value in zip(free_variables, combination):
+            variables[index] = value
+
+        for i in range(len(matrix.rows) - 1, -1, -1):
+            row = matrix.rows[i]
+            sol = solution[i]
+            if not any(x != 0 for x in row):
+                if sol != 0:
+                    raise ValueError("Inconsistent system")
+                else:
+                    continue
+            pivot_index = row.index(1)
+            remaining_variables = [i for i in range(pivot_index + 1, len(matrix.columns))]
+            variable_solution = sol - sum(row[index] * variables[index] for index in remaining_variables)
+            if variable_solution < 0:
+                # Invalid
+                valid_solution = False
+                break
+            variables[pivot_index] = variable_solution
+        if valid_solution:
+            if best_solution is None or sum(variables) < best_sum:
+                best_solution = variables
+                best_sum = sum(variables)
+    return best_solution
 
 
 t1 = perf_counter()
 # Test on first matrix
-for line in lines[:1]:
+total_number_of_buttons_pressed = 0
+for line in lines:
     buttons = [[int(x) for x in button.strip("()").split(",")] for button in line[1:-1]]
     b = [int(x) for x in line[-1].strip("{}").split(",")]
     columns = [[1 if x in button else 0 for x in range(len(b))] for button in buttons]
-    matrix = Matrix.from_columns(columns)
-    print(f"Matrix:\n{matrix}")
-    print("b: ", b)
+    original_matrix = Matrix.from_columns(columns)
+    matrix = deepcopy(original_matrix)
+    # print(f"Matrix:\n{matrix}")
+    # print("b: ", b)
     matrix, b = reduce_to_row_echelon(matrix, b)
-    print(f"Augmented matrix:\n[{'\n '.join(str(x) for x in list(zip(matrix, b)))}]")
+    # print(f"Augmented matrix:\n[{'\n '.join(str(x) for x in list(zip(matrix, b)))}]")
     free_variables = [i for i in range(len(matrix.columns)) if i not in matrix.leading_zeros]
-    print("Free variables: ", free_variables)
+    # print("Free variables: ", free_variables)
     solution = solve_system(matrix, b)
+    # print("Solution: ", solution)
+    total_number_of_buttons_pressed += sum(solution)
+    # print("Number of button presses: ", sum(solution))
+    # print("REF matrix * solution: ", matrix.mult(solution))
+    # print("Result: ", original_matrix.mult(solution))
 t2 = perf_counter()
 print(f"Total time: {t2 - t1:.4f}")
+print("Total number of buttons pressed: ", total_number_of_buttons_pressed)
