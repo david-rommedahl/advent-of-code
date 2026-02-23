@@ -4,7 +4,7 @@ from pathlib import Path
 from time import perf_counter
 from typing import Iterable, Iterator, Sequence
 
-file_path = Path(__file__).parent / "test_input.txt"
+file_path = Path(__file__).parent / "input.txt"
 
 with open(file_path, "r") as f:
     lines = [line.strip().split() for line in f]
@@ -120,10 +120,14 @@ def solve_system(matrix: Matrix, solution: Sequence[int]) -> Sequence[int]:
     Assumes that a matrix has already been transformed to RRE form.
     """
     free_variables = [i for i in range(len(matrix.columns)) if i not in matrix.leading_zeros]
-    free_variable_combinations = product(range(50), repeat=len(free_variables))
+    free_variable_combinations = sorted(
+        product(range(max(solution) + 1), repeat=len(free_variables)), key=lambda comb: sum(comb)
+    )
     best_solution = None
     best_sum = None
     for combination in free_variable_combinations:
+        if best_sum and sum(combination) >= best_sum:
+            break
         valid_solution = True
         variables = [0 for _ in range(len(matrix.columns))]
         for index, value in zip(free_variables, combination):
